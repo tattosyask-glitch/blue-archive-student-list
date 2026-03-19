@@ -1,0 +1,135 @@
+import React, { useState, useMemo } from 'https://esm.sh/react@18';
+import ReactDOM from 'https://esm.sh/react-dom@18/client';
+import { Search, Filter, X, ChevronDown, ChevronUp, Star } from 'https://esm.sh/lucide-react';
+import { clsx } from 'https://esm.sh/clsx';
+import { twMerge } from 'https://esm.sh/tailwind-merge';
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+// 簡易版キャラクターデータ（一部のみ）
+const CHARACTERS = [
+  {
+    "id": "アル",
+    "name": "アル",
+    "school": "ゲヘナ",
+    "defaultStars": 3,
+    "imageUrl": "https://bluearchive.wikiru.jp/attach2/696D67_E382A2E383AB5F69636F6E2E706E67.png",
+    "weaponType": "SR",
+    "attackType": "爆発",
+    "defenseType": "軽装備",
+    "role": "STRIKER",
+    "position": "BACK"
+  },
+  {
+    "id": "シロコ",
+    "name": "シロコ",
+    "school": "アビドス",
+    "defaultStars": 3,
+    "imageUrl": "https://bluearchive.wikiru.jp/attach2/696D67_E382B7E383ADE382B35F69636F6E2E706E67.png",
+    "weaponType": "AR",
+    "attackType": "爆発",
+    "defenseType": "軽装備",
+    "role": "STRIKER",
+    "position": "MIDDLE"
+  },
+  {
+    "id": "ヒフミ",
+    "name": "ヒフミ",
+    "school": "トリニティ",
+    "defaultStars": 3,
+    "imageUrl": "https://bluearchive.wikiru.jp/attach2/696D67_E383A2E383A2E382A45F69636F6E2E706E67.png",
+    "weaponType": "AR",
+    "attackType": "貫通",
+    "defenseType": "軽装備",
+    "role": "STRIKER",
+    "position": "MIDDLE"
+  }
+];
+
+function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterAttack, setFilterAttack] = useState('all');
+  const [filterDefense, setFilterDefense] = useState('all');
+  
+  const attackTypes = ['爆発', '貫通', '神秘', '振動', '分解'];
+  const defenseTypes = ['軽装備', '重装甲', '特殊装甲', '弾力装甲', '複合装甲'];
+
+  const getTypeColorClass = (type, category) => {
+    if (type === '爆発' || type === '軽装備') return 'text-red-600 font-bold';
+    if (type === '貫通' || type === '重装甲') return 'text-yellow-600 font-bold';
+    if (type === '神秘' || type === '特殊装甲') return 'text-blue-600 font-bold';
+    if (type === '振動' || type === '弾力装甲') return 'text-purple-600 font-bold';
+    if (type === '分解' || type === '複合装甲') return 'text-[#00897B] font-bold';
+    return '';
+  };
+
+  const filteredCharacters = useMemo(() => {
+    return CHARACTERS.filter(c => {
+      const matchQuery = c.name.includes(searchQuery);
+      const matchAttack = filterAttack === 'all' || c.attackType === filterAttack;
+      const matchDefense = filterDefense === 'all' || c.defenseType === filterDefense;
+      return matchQuery && matchAttack && matchDefense;
+    });
+  }, [searchQuery, filterAttack, filterDefense]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold text-center mb-6">ブルーアーカイブ キャラクター一覧 (簡易版)</h1>
+        
+        {/* 検索・フィルター */}
+        <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="キャラクター名で検索..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <select
+              className="border p-2 rounded-lg"
+              value={filterAttack}
+              onChange={(e) => setFilterAttack(e.target.value)}
+            >
+              <option value="all">攻撃タイプ</option>
+              {attackTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select
+              className="border p-2 rounded-lg"
+              value={filterDefense}
+              onChange={(e) => setFilterDefense(e.target.value)}
+            >
+              <option value="all">防御タイプ</option>
+              {defenseTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* キャラクター一覧 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {filteredCharacters.map(char => (
+            <div key={char.id} className="bg-white p-4 rounded-xl shadow-sm flex items-center space-x-4">
+              <img src={char.imageUrl} alt={char.name} className="w-16 h-16 rounded-full object-cover" />
+              <div>
+                <h3 className="font-bold">{char.name}</h3>
+                <div className="text-sm space-x-2">
+                  <span className={getTypeColorClass(char.attackType, 'attack')}>{char.attackType}</span>
+                  <span className={getTypeColorClass(char.defenseType, 'defense')}>{char.defenseType}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);

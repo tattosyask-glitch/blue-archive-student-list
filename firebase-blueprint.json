@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "UserCharacter": {
+      "title": "UserCharacter",
+      "description": "A user's progress and possession status for a specific character.",
+      "type": "object",
+      "properties": {
+        "characterId": { "type": "string" },
+        "isOwned": { "type": "boolean" },
+        "level": { "type": "number" },
+        "stars": { "type": "number" },
+        "weaponLevel": { "type": "number" },
+        "gear1Level": { "type": "number" },
+        "gear2Level": { "type": "number" },
+        "gear3Level": { "type": "number" },
+        "exSkill": { "type": "number" },
+        "nsSkill": { "type": "number" },
+        "psSkill": { "type": "number" },
+        "ssSkill": { "type": "number" },
+        "favoriteItemLevel": { "type": "number" },
+        "bondRank": { "type": "number" },
+        "potentialHp": { "type": "number" },
+        "potentialAtk": { "type": "number" },
+        "potentialHeal": { "type": "number" }
+      },
+      "required": ["characterId", "isOwned", "level", "stars", "weaponLevel", "gear1Level", "gear2Level", "gear3Level", "exSkill", "nsSkill", "psSkill", "ssSkill", "favoriteItemLevel", "bondRank", "potentialHp", "potentialAtk", "potentialHeal"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/characters/{characterId}": {
+      "schema": { "$ref": "#/entities/UserCharacter" },
+      "description": "Stores the character possession and growth data for a specific user."
+    }
+  }
+}

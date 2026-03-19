@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserCharacter() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['characterId', 'isOwned']) &&
+             data.characterId is string &&
+             data.isOwned is bool &&
+             (!('level' in data) || (data.level is number && data.level >= 1 && data.level <= 100)) &&
+             (!('stars' in data) || (data.stars is number && data.stars >= 1 && data.stars <= 5)) &&
+             (!('weaponLevel' in data) || (data.weaponLevel is number && data.weaponLevel >= 0 && data.weaponLevel <= 50)) &&
+             (!('gear1Level' in data) || (data.gear1Level is number && data.gear1Level >= 1 && data.gear1Level <= 9)) &&
+             (!('gear2Level' in data) || (data.gear2Level is number && data.gear2Level >= 1 && data.gear2Level <= 9)) &&
+             (!('gear3Level' in data) || (data.gear3Level is number && data.gear3Level >= 1 && data.gear3Level <= 9)) &&
+             (!('exSkill' in data) || (data.exSkill is number && data.exSkill >= 1 && data.exSkill <= 5)) &&
+             (!('nsSkill' in data) || (data.nsSkill is number && data.nsSkill >= 1 && data.nsSkill <= 10)) &&
+             (!('psSkill' in data) || (data.psSkill is number && data.psSkill >= 1 && data.psSkill <= 10)) &&
+             (!('ssSkill' in data) || (data.ssSkill is number && data.ssSkill >= 1 && data.ssSkill <= 10)) &&
+             (!('favoriteItemLevel' in data) || (data.favoriteItemLevel is number && data.favoriteItemLevel >= 0 && data.favoriteItemLevel <= 2)) &&
+             (!('bondRank' in data) || (data.bondRank is number && data.bondRank >= 1 && data.bondRank <= 100)) &&
+             (!('potentialHp' in data) || (data.potentialHp is number && data.potentialHp >= 0 && data.potentialHp <= 25)) &&
+             (!('potentialAtk' in data) || (data.potentialAtk is number && data.potentialAtk >= 0 && data.potentialAtk <= 25)) &&
+             (!('potentialHeal' in data) || (data.potentialHeal is number && data.potentialHeal >= 0 && data.potentialHeal <= 25));
+    }
+
+    match /users/{userId}/characters/{characterId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserCharacter();
+      allow update: if isOwner(userId) && isValidUserCharacter();
+      allow delete: if isOwner(userId);
+    }
+  }
+}

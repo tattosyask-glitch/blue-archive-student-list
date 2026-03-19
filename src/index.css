@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ba-blue: #00aee1;
+  --color-ba-blue-dark: #008eb8;
+  --color-ba-navy: #2b3a4a;
+  --color-ba-bg: #f4f7f8;
+  --color-ba-gold: #ffc107;
+  --color-ba-gray: #e2e8f0;
+  --color-ba-light: #f8fcff;
+}
+
+body {
+  background-color: var(--color-ba-bg);
+}
