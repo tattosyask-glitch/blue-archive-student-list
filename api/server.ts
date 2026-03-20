@@ -46,14 +46,32 @@ async function fetchAndParseCharacters() {
           const id = name.toLowerCase().replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g, "");
           if (!seenIds.has(id)) {
             seenIds.add(id);
+
+            // 画像URLの取得処理を強化
+            const imgElement = $(tds[1]).find("img");
+            // data-src があればそれを使い、なければ src を使う
+            let rawImgUrl = imgElement.attr("data-src") || imgElement.attr("src") || "";
+            let finalImgUrl = "";
+
+            if (rawImgUrl) {
+              if (rawImgUrl.startsWith("http")) {
+                finalImgUrl = rawImgUrl;
+              } else {
+                // 先頭のスラッシュを整理して結合
+                const cleanPath = rawImgUrl.startsWith("/") ? rawImgUrl.substring(1) : rawImgUrl;
+                finalImgUrl = `https://bluearchive.wikiru.jp/${cleanPath}`;
+              }
+            } else {
+              // 画像がない場合のプレースホルダー
+              finalImgUrl = `https://picsum.photos/seed/${encodeURIComponent(name)}/200/200`;
+            }
+
             characters.push({
               id,
               name,
               school: $(tds[8]).text().trim(),
               defaultStars: $(tds[0]).text().includes("★3") ? 3 : ($(tds[0]).text().includes("★2") ? 2 : 1),
-              imageUrl: $(tds[1]).find("img").attr("src")?.startsWith("http") 
-                        ? $(tds[1]).find("img").attr("src") 
-                        : "https://bluearchive.wikiru.jp/" + $(tds[1]).find("img").attr("src"),
+              imageUrl: finalImgUrl, // ここを強化したURLに差し替え
               weaponType: $(tds[3]).text().trim(),
               role: $(tds[5]).text().trim(),
               attackType: $(tds[9]).text().trim(),
@@ -67,6 +85,7 @@ async function fetchAndParseCharacters() {
     if (characters.length > 0) {
       charactersCache = characters;
       lastFetchTime = Date.now();
+      console.log(`Fetched ${characters.length} characters successfully.`);
     }
     return charactersCache;
   } catch (error) {
@@ -89,5 +108,4 @@ app.post("/api/characters/sync", async (req, res) => {
   res.json({ success: true, count: charactersCache.length });
 });
 
-// Vercelでは app.listen は不要なので export だけにする
 export default app;
