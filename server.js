@@ -2,12 +2,9 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";
 import path from "path";
-
-// In-memory cache for characters
-let charactersCache: any[] = [];
+let charactersCache = [];
 let lastFetchTime = 0;
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
-
+const CACHE_DURATION = 1e3 * 60 * 60;
 async function fetchAndParseCharacters() {
   try {
     const response = await fetch(
@@ -15,68 +12,51 @@ async function fetchAndParseCharacters() {
     );
     const html = await response.text();
     const $ = cheerio.load(html);
-
-    // Find the table containing characters
-    // Based on previous parsing, it's the 47th table (index 46) or we can find it by headers
     let table = null;
-    let headers: string[] = [];
+    let headers = [];
     $("table").each((i, el) => {
       const headerText = $(el).find("th").first().text().trim();
-      if (headerText === "レア" || headerText.includes("レア")) {
-        headers = $(el)
-          .find("th")
-          .map((_, th) => $(th).text().trim())
-          .get();
-        if (headers.includes("名前") && headers.includes("学校")) {
+      if (headerText === "\u30EC\u30A2" || headerText.includes("\u30EC\u30A2")) {
+        headers = $(el).find("th").map((_, th) => $(th).text().trim()).get();
+        if (headers.includes("\u540D\u524D") && headers.includes("\u5B66\u6821")) {
           table = $(el);
-          return false; // break
+          return false;
         }
       }
     });
-
     if (!table) {
       console.error("Could not find character table on Wiki.");
-      return charactersCache; // Return old cache if failed
+      return charactersCache;
     }
-
     const rows = table.find("tr");
-    const characters: any[] = [];
-    const seenIds = new Set();
-
+    const characters = [];
+    const seenIds = /* @__PURE__ */ new Set();
     rows.each((i, row) => {
-      if (i === 0) return; // header
+      if (i === 0) return;
       const tds = $(row).find("td, th");
       if (tds.length >= 14) {
         const rarityText = $(tds[0]).text().trim();
         let defaultStars = 3;
-        if (rarityText.includes("★1")) defaultStars = 1;
-        else if (rarityText.includes("★2")) defaultStars = 2;
-        else if (rarityText.includes("★3")) defaultStars = 3;
-
+        if (rarityText.includes("\u26051")) defaultStars = 1;
+        else if (rarityText.includes("\u26052")) defaultStars = 2;
+        else if (rarityText.includes("\u26053")) defaultStars = 3;
         const name = $(tds[2]).text().trim();
         const weaponType = $(tds[3]).text().trim();
         const role = $(tds[5]).text().trim();
         const position = $(tds[6]).text().trim();
         const characterClass = $(tds[7]).text().trim();
-
-        let img =
-          $(tds[1]).find("img").attr("data-src") ||
-          $(tds[1]).find("img").attr("src");
+        let img = $(tds[1]).find("img").attr("data-src") || $(tds[1]).find("img").attr("src");
         if (img && !img.startsWith("http")) {
           img = "https://bluearchive.wikiru.jp/" + img;
         }
-
         const school = $(tds[8]).text().trim();
         const attackType = $(tds[9]).text().trim();
         const defenseType = $(tds[10]).text().trim();
         const urban = $(tds[11]).text().trim().replace(/[0-9]/g, "");
         const outdoors = $(tds[12]).text().trim().replace(/[0-9]/g, "");
         const indoors = $(tds[13]).text().trim().replace(/[0-9]/g, "");
-
         if (name) {
-          const id = name
-            .toLowerCase()
-            .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g, "");
+          const id = name.toLowerCase().replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g, "");
           if (!seenIds.has(id)) {
             seenIds.add(id);
             characters.push({
@@ -93,13 +73,12 @@ async function fetchAndParseCharacters() {
               defenseType,
               urban,
               outdoors,
-              indoors,
+              indoors
             });
           }
         }
       }
     });
-
     if (characters.length > 0) {
       charactersCache = characters;
       lastFetchTime = Date.now();
@@ -113,43 +92,30 @@ async function fetchAndParseCharacters() {
     return charactersCache;
   }
 }
-
 async function startServer() {
   const app = express();
-  const PORT = 3000;
-
-  // API routes FIRST
+  const PORT = 3e3;
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
-
   app.get("/api/characters", async (req, res) => {
-    if (
-      charactersCache.length === 0 ||
-      Date.now() - lastFetchTime > CACHE_DURATION
-    ) {
+    if (charactersCache.length === 0 || Date.now() - lastFetchTime > CACHE_DURATION) {
       await fetchAndParseCharacters();
     }
     res.json(charactersCache);
   });
-
-  // Force sync endpoint (optional)
   app.post("/api/characters/sync", async (req, res) => {
     await fetchAndParseCharacters();
     res.json({ success: true, count: charactersCache.length });
   });
-
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    // Initial fetch
     fetchAndParseCharacters();
   });
-
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: { server } },
-      appType: "spa",
+      appType: "spa"
     });
     app.use(vite.middlewares);
   } else {
@@ -160,5 +126,4 @@ async function startServer() {
     });
   }
 }
-
 startServer();
